@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import ReportRow from "./ReportRow";
+import { ASSET_LABELS } from "@/lib/labels";
 import type { ReportMeta } from "@/lib/reports";
 
 const DECISIONS = [
@@ -15,9 +16,16 @@ export default function ReportBrowser({ reports }: { reports: ReportMeta[] }) {
   const [query, setQuery] = useState("");
   const [decision, setDecision] = useState("all");
   const [ticker, setTicker] = useState("all");
+  const [assetType, setAssetType] = useState("all");
 
   const tickers = useMemo(
     () => [...new Set(reports.map((r) => r.ticker))].sort(),
+    [reports],
+  );
+
+  // 只在仓库里同时存在多种资产类型（如股票 + 加密）时才显示该筛选项
+  const assetTypes = useMemo(
+    () => [...new Set(reports.map((r) => r.assetType).filter(Boolean) as string[])].sort(),
     [reports],
   );
 
@@ -27,12 +35,13 @@ export default function ReportBrowser({ reports }: { reports: ReportMeta[] }) {
       if (decision !== "all" && r.decision.toLowerCase() !== decision.toLowerCase())
         return false;
       if (ticker !== "all" && r.ticker !== ticker) return false;
+      if (assetType !== "all" && r.assetType !== assetType) return false;
       if (!q) return true;
       return [r.ticker, r.company, r.sector, r.date, r.summary, r.title]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(q));
     });
-  }, [reports, query, decision, ticker]);
+  }, [reports, query, decision, ticker, assetType]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, ReportMeta[]>();
@@ -69,6 +78,20 @@ export default function ReportBrowser({ reports }: { reports: ReportMeta[] }) {
             </option>
           ))}
         </select>
+        {assetTypes.length > 1 ? (
+          <select
+            value={assetType}
+            onChange={(e) => setAssetType(e.target.value)}
+            className={selectCls}
+          >
+            <option value="all">全部类型</option>
+            {assetTypes.map((t) => (
+              <option key={t} value={t}>
+                {ASSET_LABELS[t] ?? t}
+              </option>
+            ))}
+          </select>
+        ) : null}
         <select
           value={decision}
           onChange={(e) => setDecision(e.target.value)}

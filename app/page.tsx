@@ -3,6 +3,8 @@ import DecisionBadge from "@/components/DecisionBadge";
 import Markdown from "@/components/Markdown";
 import ReportRow from "@/components/ReportRow";
 import StatCard from "@/components/StatCard";
+import { ASSET_LABELS } from "@/lib/labels";
+import { SITE } from "@/lib/site";
 import {
   getAllReportMetas,
   getLatestSummary,
@@ -21,11 +23,13 @@ export default function HomePage() {
     .map(([d, n]) => `${d} ${n}`)
     .join(" · ");
 
+  const hasSummary = summary !== undefined;
+
   return (
     <div className="space-y-10">
       <section>
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          多智能体 A 股研究报告
+          {SITE.heading}
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
           归档并浏览 TradingAgents 每次跑图产出的完整报告：技术面、新闻宏观、基本面、
@@ -67,8 +71,10 @@ export default function HomePage() {
                 </div>
                 <DecisionBadge decision={t.latest.decision} size="sm" showEnglish={false} />
               </div>
-              {t.sector ? (
-                <div className="mt-3 truncate text-xs text-muted">{t.sector}</div>
+              {t.sector ?? (t.assetType ? ASSET_LABELS[t.assetType] : undefined) ? (
+                <div className="mt-3 truncate text-xs text-muted">
+                  {t.sector ?? ASSET_LABELS[t.assetType!]}
+                </div>
               ) : null}
               <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-xs text-muted">
                 <span className="font-mono tabular-nums">
@@ -81,8 +87,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="grid gap-8 lg:grid-cols-5">
-        <div className="lg:col-span-3">
+      <section className={hasSummary ? "grid gap-8 lg:grid-cols-5" : ""}>
+        <div className={hasSummary ? "lg:col-span-3" : ""}>
           <div className="mb-3 flex items-baseline justify-between">
             <h2 className="text-lg font-semibold tracking-tight">最近报告</h2>
             <Link href="/reports" className="text-sm text-[color:var(--accent)] hover:underline">
@@ -97,7 +103,7 @@ export default function HomePage() {
         </div>
 
         {summary ? (
-          <div className="lg:col-span-2">
+          <div className="mt-8 lg:col-span-2 lg:mt-0">
             <div className="mb-3 flex items-baseline justify-between">
               <h2 className="text-lg font-semibold tracking-tight">最新决策汇总</h2>
               <Link href="/summary" className="text-sm text-[color:var(--accent)] hover:underline">

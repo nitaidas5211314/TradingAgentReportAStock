@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import DecisionBadge from "@/components/DecisionBadge";
 import ReportRow from "@/components/ReportRow";
+import { ASSET_LABELS } from "@/lib/labels";
 import { getTicker, getTickers } from "@/lib/reports";
 
 type Params = { params: Promise<{ ticker: string }> };
@@ -43,7 +44,12 @@ export default async function TickerPage({ params }: Params) {
             <h1 className="font-mono text-2xl font-semibold tracking-tight">{info.ticker}</h1>
             <p className="mt-1 text-lg">{info.company ?? "—"}</p>
             <p className="mt-1 text-sm text-muted">
-              {[info.sector, info.exchange].filter(Boolean).join(" · ") || "—"}
+              {[
+                info.sector ?? (info.assetType ? ASSET_LABELS[info.assetType] : undefined),
+                info.exchange,
+              ]
+                .filter(Boolean)
+                .join(" · ") || "—"}
             </p>
           </div>
           <div className="text-right">

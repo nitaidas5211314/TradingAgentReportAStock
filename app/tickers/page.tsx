@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import DecisionBadge from "@/components/DecisionBadge";
+import { ASSET_LABELS } from "@/lib/labels";
 import { getTickers } from "@/lib/reports";
 
 export const metadata: Metadata = { title: "标的列表" };
@@ -21,7 +22,7 @@ export default function TickersPage() {
               <tr className="border-b border-line text-left text-xs text-muted">
                 <th className="px-4 py-3 font-medium">代码</th>
                 <th className="px-4 py-3 font-medium">公司</th>
-                <th className="px-4 py-3 font-medium">行业</th>
+                <th className="px-4 py-3 font-medium">行业 / 类型</th>
                 <th className="px-4 py-3 font-medium">最新结论</th>
                 <th className="px-4 py-3 font-medium">最新跑图</th>
                 <th className="px-4 py-3 text-right font-medium">报告数</th>
@@ -42,7 +43,9 @@ export default function TickersPage() {
                     </Link>
                   </td>
                   <td className="px-4 py-3">{t.company ?? "—"}</td>
-                  <td className="px-4 py-3 text-muted">{t.sector ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted">
+                    {t.sector ?? (t.assetType ? ASSET_LABELS[t.assetType] : undefined) ?? "—"}
+                  </td>
                   <td className="px-4 py-3">
                     <DecisionBadge decision={t.latest.decision} size="sm" showEnglish={false} />
                   </td>

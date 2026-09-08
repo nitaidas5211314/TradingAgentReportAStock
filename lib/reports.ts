@@ -50,6 +50,7 @@ export interface TickerInfo {
   company?: string;
   sector?: string;
   exchange?: string;
+  assetType?: string;
   count: number;
   latest: ReportMeta;
   reports: ReportMeta[];
@@ -114,14 +115,14 @@ function boldField(md: string, label: string): string | undefined {
   return m?.[1].trim() || undefined;
 }
 
-/** 从 JSON 的 instrument_context 里解析出公司/行业/交易所 */
+/** 从 JSON 的 instrument_context 里解析出名称/行业/交易所（股票为 Company，加密为 Name） */
 function parseInstrumentContext(ctx: string) {
   const pick = (label: string) => {
     const m = ctx.match(new RegExp(`${label}:\\s*([^;.]+)`));
     return m?.[1].trim() || undefined;
   };
   return {
-    company: pick("Company"),
+    company: pick("Company") ?? pick("Name"),
     sector: pick("Business classification"),
     exchange: pick("Exchange"),
   };
@@ -276,6 +277,7 @@ export function getTickers(): TickerInfo[] {
         company: list.find((r) => r.company)?.company,
         sector: list.find((r) => r.sector)?.sector,
         exchange: list.find((r) => r.exchange)?.exchange,
+        assetType: list.find((r) => r.assetType)?.assetType,
         count: list.length,
         latest: toMeta(latest),
         reports: list.map(toMeta),

@@ -1,23 +1,29 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getSummaries } from "@/lib/reports";
+import { SITE } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "A 股多智能体研究报告",
-    template: "%s · A 股多智能体研究报告",
+    default: SITE.name,
+    template: `%s · ${SITE.name}`,
   },
-  description: "TradingAgents 多智能体生成的 A 股研究报告历史归档与浏览。",
+  description: SITE.description,
 };
 
 const NAV = [
   { href: "/", label: "概览" },
   { href: "/tickers", label: "标的" },
   { href: "/reports", label: "全部报告" },
-  { href: "/summary", label: "每日汇总" },
 ];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // 仓库里没有 summary/ 目录时（例如只跑单标的的仓库），不显示汇总入口
+  const nav = getSummaries().length
+    ? [...NAV, { href: "/summary", label: "每日汇总" }]
+    : NAV;
+
   return (
     <html lang="zh-CN">
       <body className="min-h-screen font-sans antialiased">
@@ -25,12 +31,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="mx-auto flex h-14 max-w-7xl items-center gap-6 px-4 sm:px-6">
             <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
               <span className="grid h-7 w-7 place-items-center rounded-md bg-[color:var(--accent)] text-sm font-bold text-white">
-                A
+                {SITE.logo}
               </span>
-              <span className="hidden sm:inline">A 股研究报告归档</span>
+              <span className="hidden sm:inline">{SITE.shortName}</span>
             </Link>
             <nav className="flex items-center gap-1 text-sm">
-              {NAV.map((item) => (
+              {nav.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import DecisionBadge from "@/components/DecisionBadge";
 import Markdown from "@/components/Markdown";
 import Toc from "@/components/Toc";
+import { assetLabel } from "@/lib/labels";
 import { getAllReports, getReport } from "@/lib/reports";
 
 type Params = { params: Promise<{ ticker: string; date: string; slug: string }> };
@@ -91,7 +92,7 @@ export default async function ReportPage({ params }: Params) {
         <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-line pt-5 sm:grid-cols-3 lg:grid-cols-4">
           <Meta label="交易日" value={<span className="font-mono">{report.date}</span>} />
           <Meta label="生成时间" value={report.startedAtLabel ?? report.timeLabel} />
-          <Meta label="资产类型" value={report.assetType} />
+          <Meta label="资产类型" value={assetLabel(report.assetType)} />
           <Meta label="跑图耗时" value={report.duration} />
           <Meta
             label="分析师"
