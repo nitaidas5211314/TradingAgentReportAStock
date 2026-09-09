@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import DecisionBadge from "@/components/DecisionBadge";
+import MarketBadge from "@/components/MarketBadge";
 import { ASSET_LABELS } from "@/lib/labels";
 import { getTickers } from "@/lib/reports";
 
@@ -8,6 +9,9 @@ export const metadata: Metadata = { title: "标的列表" };
 
 export default function TickersPage() {
   const tickers = getTickers();
+  // 仓库里只有单一市场时不必占一列
+  const showMarket = new Set(tickers.map((t) => t.market)).size > 1;
+
   return (
     <div className="space-y-6">
       <header>
@@ -21,6 +25,7 @@ export default function TickersPage() {
             <thead>
               <tr className="border-b border-line text-left text-xs text-muted">
                 <th className="px-4 py-3 font-medium">代码</th>
+                {showMarket ? <th className="px-4 py-3 font-medium">市场</th> : null}
                 <th className="px-4 py-3 font-medium">公司</th>
                 <th className="px-4 py-3 font-medium">行业 / 类型</th>
                 <th className="px-4 py-3 font-medium">最新结论</th>
@@ -42,6 +47,11 @@ export default function TickersPage() {
                       {t.ticker}
                     </Link>
                   </td>
+                  {showMarket ? (
+                    <td className="px-4 py-3">
+                      <MarketBadge market={t.market} />
+                    </td>
+                  ) : null}
                   <td className="px-4 py-3">{t.company ?? "—"}</td>
                   <td className="px-4 py-3 text-muted">
                     {t.sector ?? (t.assetType ? ASSET_LABELS[t.assetType] : undefined) ?? "—"}

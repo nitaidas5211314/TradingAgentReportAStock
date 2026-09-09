@@ -3,8 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import DecisionBadge from "@/components/DecisionBadge";
 import Markdown from "@/components/Markdown";
+import MarketBadge from "@/components/MarketBadge";
 import Toc from "@/components/Toc";
 import { assetLabel } from "@/lib/labels";
+import { MARKETS } from "@/lib/market";
 import { getAllReports, getReport } from "@/lib/reports";
 
 type Params = { params: Promise<{ ticker: string; date: string; slug: string }> };
@@ -78,9 +80,12 @@ export default async function ReportPage({ params }: Params) {
       <header className="panel rounded-xl p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="font-mono text-xl font-semibold tracking-tight sm:text-2xl">
-              {report.ticker}
-            </h1>
+            <div className="flex items-center gap-2.5">
+              <h1 className="font-mono text-xl font-semibold tracking-tight sm:text-2xl">
+                {report.ticker}
+              </h1>
+              <MarketBadge market={report.market} size="md" />
+            </div>
             <p className="mt-1 text-base">{report.company ?? report.title}</p>
             {report.sector ? (
               <p className="mt-0.5 text-sm text-muted">{report.sector}</p>
@@ -92,6 +97,7 @@ export default async function ReportPage({ params }: Params) {
         <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-line pt-5 sm:grid-cols-3 lg:grid-cols-4">
           <Meta label="交易日" value={<span className="font-mono">{report.date}</span>} />
           <Meta label="生成时间" value={report.startedAtLabel ?? report.timeLabel} />
+          <Meta label="市场" value={MARKETS[report.market].label} />
           <Meta label="资产类型" value={assetLabel(report.assetType)} />
           <Meta label="跑图耗时" value={report.duration} />
           <Meta

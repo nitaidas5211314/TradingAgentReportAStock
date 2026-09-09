@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { slugifyHeading } from "./heading";
+import { MARKET_ORDER, marketOf, type MarketId } from "./market";
 
 const ROOT = process.cwd();
 export const REPORTS_DIR = path.join(ROOT, "reports");
@@ -25,6 +26,8 @@ export interface ReportMeta {
   sector?: string;
   exchange?: string;
   assetType?: string;
+  /** 所属市场：A 股 / 港股 / 美股 / 加密 */
+  market: MarketId;
   analysts: string[];
   startedAt?: string;
   startedAtLabel?: string;
@@ -51,6 +54,7 @@ export interface TickerInfo {
   sector?: string;
   exchange?: string;
   assetType?: string;
+  market: MarketId;
   count: number;
   latest: ReportMeta;
   reports: ReportMeta[];
@@ -202,6 +206,7 @@ function parseReport(ticker: string, date: string, slug: string): Report | null 
     sector,
     exchange,
     assetType,
+    market: marketOf(ticker, exchange, assetType),
     analysts,
     startedAt,
     startedAtLabel,
@@ -278,6 +283,7 @@ export function getTickers(): TickerInfo[] {
         sector: list.find((r) => r.sector)?.sector,
         exchange: list.find((r) => r.exchange)?.exchange,
         assetType: list.find((r) => r.assetType)?.assetType,
+        market: latest.market,
         count: list.length,
         latest: toMeta(latest),
         reports: list.map(toMeta),
@@ -327,14 +333,27 @@ export function getStats() {
   const reports = getAllReports();
   const tickers = getTickers();
   const counts = new Map<string, number>();
+  const markets = new Map<MarketId, number>();
   for (const t of tickers) {
     counts.set(t.latest.decision, (counts.get(t.latest.decision) ?? 0) + 1);
+    markets.set(t.market, (markets.get(t.market) ?? 0) + 1);
   }
   return {
     totalReports: reports.length,
     totalTickers: tickers.length,
     latestDate: reports[0]?.date,
     latestDecisions: counts,
+    /** 各市场覆盖的标的数 */
+    markets,
     tradingDays: new Set(reports.map((r) => r.date)).size,
   };
+}
+
+/** 按市场把标的分组，仅返回有数据的市场，顺序固定 */
+export function getTickersByMarket(): { market: MarketId; tickers: TickerInfo[] }[] {
+  const tickers = getTickers();
+  return MARKET_ORDER.map((market) => ({
+    market,
+    tickers: tickers.filter((t) => t.market === market),
+  })).filter((g) => g.tickers.length > 0);
 }

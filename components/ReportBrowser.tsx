@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import ReportRow from "./ReportRow";
 import { ASSET_LABELS } from "@/lib/labels";
+import { MARKETS, MARKET_ORDER, type MarketId } from "@/lib/market";
 import type { ReportMeta } from "@/lib/reports";
 
 const DECISIONS = [
@@ -17,23 +18,46 @@ export default function ReportBrowser({ reports }: { reports: ReportMeta[] }) {
   const [decision, setDecision] = useState("all");
   const [ticker, setTicker] = useState("all");
   const [assetType, setAssetType] = useState("all");
+  const [market, setMarket] = useState("all");
 
   const tickers = useMemo(
-    () => [...new Set(reports.map((r) => r.ticker))].sort(),
-    [reports],
+    () =>
+      [
+        ...new Set(
+          reports.filter((r) => market === "all" || r.market === market).map((r) => r.ticker),
+        ),
+      ].sort(),
+    [reports, market],
   );
 
-  // 只在仓库里同时存在多种资产类型（如股票 + 加密）时才显示该筛选项
-  const assetTypes = useMemo(
-    () => [...new Set(reports.map((r) => r.assetType).filter(Boolean) as string[])].sort(),
-    [reports],
-  );
+  // 只在覆盖多个市场（如 A 股 + 港股）时才显示市场筛选
+  const markets = useMemo(() => {
+    const present = new Set(reports.map((r) => r.market));
+    return MARKET_ORDER.filter((m) => present.has(m));
+  }, [reports]);
+
+  // 资产类型与市场高度重合（加密既是类型也是市场），
+  // 只有当同一个市场里出现多种资产类型（如美股的股票 + ETF）时才值得单独筛选
+  const assetTypes = useMemo(() => {
+    const byMarket = new Map<string, Set<string>>();
+    for (const r of reports) {
+      if (!r.assetType) continue;
+      const set = byMarket.get(r.market) ?? new Set<string>();
+      set.add(r.assetType);
+      byMarket.set(r.market, set);
+    }
+    const useful = [...byMarket.values()].some((set) => set.size > 1);
+    return useful
+      ? [...new Set(reports.map((r) => r.assetType).filter(Boolean) as string[])].sort()
+      : [];
+  }, [reports]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return reports.filter((r) => {
       if (decision !== "all" && r.decision.toLowerCase() !== decision.toLowerCase())
         return false;
+      if (market !== "all" && r.market !== market) return false;
       if (ticker !== "all" && r.ticker !== ticker) return false;
       if (assetType !== "all" && r.assetType !== assetType) return false;
       if (!q) return true;
@@ -41,7 +65,7 @@ export default function ReportBrowser({ reports }: { reports: ReportMeta[] }) {
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(q));
     });
-  }, [reports, query, decision, ticker, assetType]);
+  }, [reports, query, decision, ticker, assetType, market]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, ReportMeta[]>();
@@ -66,6 +90,23 @@ export default function ReportBrowser({ reports }: { reports: ReportMeta[] }) {
           placeholder="搜索代码、公司、行业、日期…"
           className={`${selectCls} min-w-0 flex-1 sm:min-w-64`}
         />
+        {markets.length > 1 ? (
+          <select
+            value={market}
+            onChange={(e) => {
+              setMarket(e.target.value);
+              setTicker("all");
+            }}
+            className={selectCls}
+          >
+            <option value="all">全部市场</option>
+            {markets.map((m) => (
+              <option key={m} value={m}>
+                {MARKETS[m as MarketId].label}
+              </option>
+            ))}
+          </select>
+        ) : null}
         <select
           value={ticker}
           onChange={(e) => setTicker(e.target.value)}
@@ -78,7 +119,7 @@ export default function ReportBrowser({ reports }: { reports: ReportMeta[] }) {
             </option>
           ))}
         </select>
-        {assetTypes.length > 1 ? (
+        {assetTypes.length > 0 ? (
           <select
             value={assetType}
             onChange={(e) => setAssetType(e.target.value)}

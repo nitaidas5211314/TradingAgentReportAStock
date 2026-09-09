@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import DecisionBadge from "@/components/DecisionBadge";
+import MarketBadge from "@/components/MarketBadge";
 import ReportRow from "@/components/ReportRow";
 import { ASSET_LABELS } from "@/lib/labels";
 import { getTicker, getTickers } from "@/lib/reports";
@@ -41,7 +42,10 @@ export default async function TickerPage({ params }: Params) {
       <header className="panel rounded-xl p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="font-mono text-2xl font-semibold tracking-tight">{info.ticker}</h1>
+            <div className="flex items-center gap-2.5">
+              <h1 className="font-mono text-2xl font-semibold tracking-tight">{info.ticker}</h1>
+              <MarketBadge market={info.market} size="md" />
+            </div>
             <p className="mt-1 text-lg">{info.company ?? "—"}</p>
             <p className="mt-1 text-sm text-muted">
               {[

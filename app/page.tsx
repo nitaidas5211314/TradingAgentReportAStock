@@ -1,36 +1,68 @@
 import Link from "next/link";
 import DecisionBadge from "@/components/DecisionBadge";
+import MarketBadge from "@/components/MarketBadge";
 import Markdown from "@/components/Markdown";
 import ReportRow from "@/components/ReportRow";
 import StatCard from "@/components/StatCard";
 import { ASSET_LABELS } from "@/lib/labels";
-import { SITE } from "@/lib/site";
+import { MARKETS, MARKET_ORDER } from "@/lib/market";
 import {
   getAllReportMetas,
   getLatestSummary,
   getStats,
-  getTickers,
+  getTickersByMarket,
+  type TickerInfo,
 } from "@/lib/reports";
+import { SITE } from "@/lib/site";
+
+function TickerCard({ ticker: t }: { ticker: TickerInfo }) {
+  const subtitle = t.sector ?? (t.assetType ? ASSET_LABELS[t.assetType] : undefined);
+  return (
+    <Link
+      href={`/tickers/${t.ticker}`}
+      className="panel group flex flex-col rounded-xl p-4 transition hover:border-[color:var(--accent)]"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-base font-semibold">{t.ticker}</span>
+            <MarketBadge market={t.market} />
+          </div>
+          <div className="mt-0.5 truncate text-sm text-muted">{t.company ?? "—"}</div>
+        </div>
+        <DecisionBadge decision={t.latest.decision} size="sm" showEnglish={false} />
+      </div>
+      {subtitle ? <div className="mt-3 truncate text-xs text-muted">{subtitle}</div> : null}
+      <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-xs text-muted">
+        <span className="font-mono tabular-nums">
+          {t.latest.date} {t.latest.timeLabel}
+        </span>
+        <span>{t.count} 份报告</span>
+      </div>
+    </Link>
+  );
+}
 
 export default function HomePage() {
   const stats = getStats();
-  const tickers = getTickers();
+  const groups = getTickersByMarket();
   const recent = getAllReportMetas().slice(0, 8);
   const summary = getLatestSummary();
+  const hasSummary = summary !== undefined;
+  const multiMarket = groups.length > 1;
 
   const decisionMix = [...stats.latestDecisions.entries()]
     .sort((a, b) => b[1] - a[1])
     .map(([d, n]) => `${d} ${n}`)
     .join(" · ");
-
-  const hasSummary = summary !== undefined;
+  const marketMix = MARKET_ORDER.filter((m) => stats.markets.has(m))
+    .map((m) => `${MARKETS[m].short} ${stats.markets.get(m)}`)
+    .join(" · ");
 
   return (
     <div className="space-y-10">
       <section>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          {SITE.heading}
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{SITE.heading}</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
           归档并浏览 TradingAgents 每次跑图产出的完整报告：技术面、新闻宏观、基本面、
           多空辩论、交易员方案与风控最终决定。
@@ -39,7 +71,11 @@ export default function HomePage() {
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="报告总数" value={stats.totalReports} />
-        <StatCard label="覆盖标的" value={stats.totalTickers} />
+        <StatCard
+          label="覆盖标的"
+          value={stats.totalTickers}
+          hint={multiMarket ? marketMix : undefined}
+        />
         <StatCard label="跑图天数" value={stats.tradingDays} />
         <StatCard
           label="最新交易日"
@@ -55,36 +91,30 @@ export default function HomePage() {
             查看全部 →
           </Link>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {tickers.map((t) => (
-            <Link
-              key={t.ticker}
-              href={`/tickers/${t.ticker}`}
-              className="panel group flex flex-col rounded-xl p-4 transition hover:border-[color:var(--accent)]"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="font-mono text-base font-semibold">{t.ticker}</div>
-                  <div className="mt-0.5 truncate text-sm text-muted">
-                    {t.company ?? "—"}
-                  </div>
+
+        {multiMarket ? (
+          <div className="space-y-6">
+            {groups.map((g) => (
+              <div key={g.market}>
+                <h3 className="mb-2.5 flex items-center gap-2 text-sm font-medium text-muted">
+                  <MarketBadge market={g.market} size="md" />
+                  <span>{g.tickers.length} 个标的</span>
+                </h3>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {g.tickers.map((t) => (
+                    <TickerCard key={t.ticker} ticker={t} />
+                  ))}
                 </div>
-                <DecisionBadge decision={t.latest.decision} size="sm" showEnglish={false} />
               </div>
-              {t.sector ?? (t.assetType ? ASSET_LABELS[t.assetType] : undefined) ? (
-                <div className="mt-3 truncate text-xs text-muted">
-                  {t.sector ?? ASSET_LABELS[t.assetType!]}
-                </div>
-              ) : null}
-              <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-xs text-muted">
-                <span className="font-mono tabular-nums">
-                  {t.latest.date} {t.latest.timeLabel}
-                </span>
-                <span>{t.count} 份报告</span>
-              </div>
-            </Link>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {groups.flatMap((g) => g.tickers).map((t) => (
+              <TickerCard key={t.ticker} ticker={t} />
+            ))}
+          </div>
+        )}
       </section>
 
       <section className={hasSummary ? "grid gap-8 lg:grid-cols-5" : ""}>

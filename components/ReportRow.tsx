@@ -1,5 +1,6 @@
 import Link from "next/link";
 import DecisionBadge from "./DecisionBadge";
+import MarketBadge from "./MarketBadge";
 import type { ReportMeta } from "@/lib/reports";
 
 export default function ReportRow({
@@ -18,7 +19,10 @@ export default function ReportRow({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
           {showTicker ? (
-            <span className="font-mono text-sm font-semibold">{report.ticker}</span>
+            <>
+              <span className="font-mono text-sm font-semibold">{report.ticker}</span>
+              <MarketBadge market={report.market} />
+            </>
           ) : null}
           {report.company ? (
             <span className="truncate text-sm text-muted">{report.company}</span>
